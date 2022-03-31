@@ -1,0 +1,66 @@
+<%- include('./common/header.ejs') %>
+<main class="mx-6 my-3 is-flex is-flex-direction-column is-justify-content-center is-align-items-center">
+	<h1 class="mb-4 is-size-1 has-text-weight-bold">Discutons avec nous même</h1>
+	<div class="chat-content">
+		<ul  id="messages"></ul>
+		<form id="form" action="" class="is-flex">
+			<input class="input" id="input" autocomplete="off" /><button class="button has-background-primary has-text-whited btn-grad">Send</button>
+		</form>
+	</div>
+</main>
+<%- include('./common/footer.ejs') %>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+	let cookie = document.cookie;
+	console.log(cookie)
+
+	let pseudo='';
+	let havePseudo = false;
+	cookie = cookie.split(';');
+	for (el of cookie){
+		if (el.indexOf('pseudo') > -1){
+			havePseudo = true;
+			console.log('pseudo')
+			pseudo = el.split('=');
+			pseudo = pseudo[1];
+			break;
+		}
+	}
+
+	console.log(havePseudo)
+	if (!havePseudo){
+		pseudo = prompt('Entrer votre pseudo')
+		document.cookie += document.cookie.length > 0 ? `;pseudo=${pseudo}` : `pseudo=${pseudo}`;
+	}
+
+	var socket = io();
+
+	var messages = document.getElementById('messages');
+	var form = document.getElementById('form');
+	var input = document.getElementById('input');
+
+	form.addEventListener('submit', function(e) {
+		e.preventDefault();
+		if (input.value) {
+			socket.emit('chat message', {value : input.value, pseudo});
+			input.value = '';
+		}
+	});
+
+	socket.on('server message', function(msg) {
+		var item = document.createElement('li');
+		item.textContent = msg;
+		messages.appendChild(item);
+		window.scrollTo(0, document.body.scrollHeight);
+	});
+
+	socket.on('chat message', function(msg) {
+		var item = document.createElement('li');
+		item.textContent = `${msg.pseudo}: ${msg.value}`;
+		item.classList.add('chat')
+		item.classList.add(msg.pseudo === pseudo ? `self` : `other`)
+		messages.appendChild(item);
+		window.scrollTo(0, document.body.scrollHeight);
+	});
+</script>

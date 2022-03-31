@@ -1,0 +1,28 @@
+<%- include('./common/header.ejs') %>
+<main class="login is-flex is-justify-content-center is-align-items-center is-flex-direction-column">
+    <div class="is-flex is-justify-content-center is-align-items-center is-flex-direction-column">
+        <h1 class="mb-4 is-size-1 has-text-weight-bold">Connexion</h1>
+        <div class="is-flex is-justify-content-center is-align-items-center">
+            <form class="" action="/login" method="POST">
+                <div class="field">
+                    <label class="label" for="username">Username</label>
+                    <div class="control">
+                        <input class="input" type="text" id="username" name="username" value="" required/>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label" for="password">Password</label>
+                    <div class="control">
+                        <input class="input" type="password" id="password" name="password" value="" required/>
+                    </div>
+                </div>
+                <input type="submit" class="button is-primary btn-grad">
+            </form>
+        </div>
+        <%if (loginError) {%>
+            <p>Le mot de passe est incorrect</p>
+        <%}%>
+    </div>
+
+</main>
+<%- include('./common/footer.ejs') %>
