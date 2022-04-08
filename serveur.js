@@ -5,17 +5,81 @@ import * as http from "http";
 const server = http.createServer(app);
 import { Server} from "socket.io";
 const io = new Server(server);
-// import mariadb from "mariadb"
-// const pool = mariadb.createPool({
-//
-// 	host: "localhost",
-// 	user: "root",
-// 	password: "rootPassword"
-//
-// });
-// const db = await pool.getConnection().then( conn => {
-// 	return conn
-// })
+import mariadb from "mariadb"
+const pool = mariadb.createPool({
+
+	host: "localhost",
+	user: "root",
+	password: "rootPassword"
+
+});
+const db = await pool.getConnection().then( conn => {
+	return conn
+})
+
+import { graphqlHTTP } from "express-graphql";
+import { buildSchema} from "graphql";
+
+var schema = buildSchema(`
+  type Query {
+    chanteurs: [Chanteur]
+    chanteur(idChanteur:Int!): Chanteur
+  }
+  
+	type Chanteur {
+		idChanteur: Int!
+		pseudo: String
+		nbrConcert: Int	
+		tournees:[Tournee]
+	}
+	
+	type Tournee {
+		idTournee: Int!
+		nom: String
+		idStyle: Int!
+	}
+	
+	type Mutation {
+		addChanteur(pseudo: String!, nbrConcert: Int): Chanteur
+	}
+`);
+
+
+//resolver
+var root = {
+	chanteurs: async() => {
+		let request = await db.query(
+			`SELECT chanteur.idChanteur,
+					chanteur.pseudo,
+					chanteur.nbrConcert,
+					tournee.idTournee,
+					tournee.nom,
+					tournee.idStyle,
+					concert.idConcert,
+					concert.dateConcert,
+					concert.ville,
+					concert.nbrPlaceVendu
+			 FROM liveAddict.Chanteur AS chanteur
+					  INNER JOIN liveAddict.Tournee AS tournee ON chanteur.idChanteur = tournee.idChanteur
+					  INNER JOIN liveAddict.Concert AS concert ON tournee.idTournee = concert.idTournee
+			`);
+		console.log(request)
+		return request
+	},
+
+	addChanteur: (args) => {
+		console.log(args)
+		return db.query(`INSERT INTO liveAddict.Chanteur (pseudo, nbrConcert) VALUES ("${args.pseudo}", ${args.nbrConcert} )`);
+	},
+
+	chanteur: async(args) => {
+		const result = await db.query(`SELECT *
+									   FROM liveAddict.Chanteur
+									   WHERE idChanteur = ${args.idChanteur}`)
+		console.log(result)
+		return result[0]
+	},
+};
 
 function setHeader(res) {
 	return res.set({"Content-Type": "text/html; charset=utf-8"});
@@ -97,6 +161,16 @@ io.on('connection', (socket) => {
 		console.log('user disconnected');
 	});
 });
+app.use('/graphql', graphqlHTTP({
+	schema: schema,
+	rootValue: root,
+	graphiql: true,
+}))
+
+// app.use('/chanteurs', graphqlHTTP({
+// 	schema: schema,
+// 	rootValue: root,
+// }))
 
 //Gestion de la 404
 app.use(function(req, res, next) {
